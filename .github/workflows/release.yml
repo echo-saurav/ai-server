@@ -1,32 +1,40 @@
-name: Build Docker Image
+
+name: Release Docker Image
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch: # lets you trigger it manually
+    tags:
+      - "*"  # trigger on every tag push (like v1.0.0)
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed for release creation
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Docker Hub  # Or GHCR
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build Docker image
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          docker build -t my-image:$tag .
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: yourdockeruser/your-image-name:latest
+      - name: Save Docker image as tarball
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          docker save my-image:$tag -o my-image-$tag.tar
+
+      - name: Create GitHub Release and upload image
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          gh release create "$tag" \
+            --title="Docker release $tag" \
+            --notes="This is a Docker image release for tag \`$tag\`" \
+            --draft \
+            my-image-$tag.tar
