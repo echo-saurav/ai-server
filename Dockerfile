@@ -13,6 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the Flask application code to the working directory
 COPY . .
 
-CMD ["python","/app/src/main.py"]
+CMD ["python","/app/src/init.py"]
 
 

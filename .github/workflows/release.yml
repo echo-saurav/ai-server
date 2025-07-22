@@ -2,7 +2,7 @@ name: Build Docker Image
 
 on:
   push:
-    branches: [main] # you can change this to "tags" or something else
+    branches: [main] # you can change this to "tags.json" or something else
 
 jobs:
   build-and-push:
